@@ -51,11 +51,12 @@ module.exports = {
 
         "arrow-body-style": "off",
         "max-len": ["error", { "code": 260, "tabWidth": 2 }],
-        "no-use-before-define": "off",
-        "no-multiple-empty-lines": "off",
-        "no-plusplus": "off",
         "no-case-declarations": "off",
+        "no-multiple-empty-lines": "off",
+        "no-nested-ternary": "off",
+        "no-plusplus": "off",
         "no-shadow": "off",
+        "no-use-before-define": "off",
         "object-curly-newline": "off",
       },
       settings: {
