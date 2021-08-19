@@ -9,7 +9,7 @@ module.exports = curry((opts, config) => {
       contentBase: opts.webRoot,
       publicPath: opts.assetDir,
       compress: true,
-      port: 8080,
+      port: 7822,
       host: '0.0.0.0',
       hot: true,
     },

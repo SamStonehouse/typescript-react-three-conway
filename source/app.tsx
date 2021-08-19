@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 
 import styles from './app.scss';
@@ -10,7 +10,7 @@ function replaceAt<T>(array: T[], index: number, value: T): T[] {
   return ret;
 }
 
-const sumAcc = (acc: number, val: number): number => acc + val;
+const sum = (acc: number, val: number): number => acc + val;
 
 function createGrid(cols: number, rows: number): number[][] {
   return Array<number[]>(cols).fill([]).map(() => Array<number>(rows).fill(0).map(() => Math.floor(Math.random() * 2)));
@@ -18,26 +18,28 @@ function createGrid(cols: number, rows: number): number[][] {
 
 const overflow = (cols: number, rows: number) => ([col, row]: number[]): number[] => [(col + cols) % cols, (row + rows) % rows];
 
-function getNeighbourIndexes(cols: number, rows: number, col: number, row: number): number[][] {
+function createCellNeighbours(cols: number, rows: number): number[][][][] {
   const gridOverflow = overflow(cols, rows);
-  return [
-    [col - 1, row - 1],
-    [col - 1, row],
-    [col - 1, row + 1],
-    [col, row - 1],
-    [col, row + 1],
-    [col + 1, row - 1],
-    [col + 1, row],
-    [col + 1, row + 1],
-  ].map(gridOverflow);
+  return Array<number[]>(cols).fill([]).map((col, colI) => Array<number>(rows).fill(0).map(
+    (row, rowI) => [
+      [colI - 1, rowI - 1],
+      [colI - 1, rowI],
+      [colI - 1, rowI + 1],
+      [colI, rowI - 1],
+      [colI, rowI + 1],
+      [colI + 1, rowI - 1],
+      [colI + 1, rowI],
+      [colI + 1, rowI + 1],
+    ].map(gridOverflow),
+  ));
 }
 
 const cellGetter = (state: number[][]) => ([col, row]: number[]): number => {
   return state[col][row];
 };
 
-const getNeighbours = (stateCellGetter: (cellGetter: number[]) => number, cols: number, rows: number) => (col: number, row: number): number[] => {
-  return getNeighbourIndexes(cols, rows, col, row).map(stateCellGetter);
+const getNeighbours = (stateCellGetter: (cellGetter: number[]) => number, cellNeighbours: number[][][][]) => (col: number, row: number): number[] => {
+  return cellNeighbours[col][row].map(stateCellGetter);
 };
 
 const nextCellState = (value: number, neighbourSum: number): number => {
@@ -46,22 +48,25 @@ const nextCellState = (value: number, neighbourSum: number): number => {
     : (neighbourSum === 3) ? 1 : 0;
 };
 
-function runGeneration(cells: number[][], cols, rows): number[][] {
+function runGeneration(cells: number[][], cellNeighbours: number[][][][], cols: number, rows: number): number[][] {
   const stateCellGetter = cellGetter(cells);
-  const neighbourGetter = getNeighbours(stateCellGetter, cols, rows);
+
+  const neighbourGetter = getNeighbours(stateCellGetter, cellNeighbours);
 
   return cells.map((column, colIndex) => {
     return column.map((value, rowIndex) => {
-      return nextCellState(value, neighbourGetter(colIndex, rowIndex).reduce(sumAcc));
+      return nextCellState(value, neighbourGetter(colIndex, rowIndex).reduce(sum));
     });
   });
 }
 
 const App = (): React.ReactElement => {
-  const [cols, setCols] = useState(10);
-  const [rows, setRows] = useState(10);
+  const [cols, setCols] = useState(20);
+  const [rows, setRows] = useState(20);
   const [cells, setCells] = useState<number[][]>([[]]);
   const [running, setRunning] = useState(true);
+
+  const cellNeighbours = useMemo<number[][][][]>(() => { return createCellNeighbours(cols, rows); }, [cols, rows]);
 
   useEffect(() => {
     setCells(createGrid(cols, rows));
@@ -72,7 +77,7 @@ const App = (): React.ReactElement => {
 
     if (running) {
       interval = setInterval(() => {
-        setCells((currState) => runGeneration(currState, cols, rows));
+        setCells((currState) => runGeneration(currState, cellNeighbours, cols, rows));
       }, 500);
     }
 
@@ -97,6 +102,8 @@ const App = (): React.ReactElement => {
               col={ci}
               active={val === 1}
               key={`${ci} ${ri}`}
+              xOffset={-cols / 4}
+              yOffset={-rows / 4}
             />
           ));
         })}

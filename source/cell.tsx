@@ -3,13 +3,15 @@ import THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
 interface ICellProps {
+  xOffset: number,
+  yOffset: number,
   col: number,
   row: number,
   active: boolean,
   setActive(active: boolean): void,
 }
 
-const Cell = ({ col, row, active, setActive }: ICellProps): React.ReactElement => {
+const Cell = ({ xOffset, yOffset, col, row, active, setActive }: ICellProps): React.ReactElement => {
   const ref = useRef<THREE.Mesh>();
   const [hovered, setHover] = useState(false);
 
@@ -21,7 +23,7 @@ const Cell = ({ col, row, active, setActive }: ICellProps): React.ReactElement =
   // Return the view, these are regular Threejs elements expressed in JSX
   return (
     <mesh
-      position={[-2.5 + (col * 0.5), -2.5 + (row * 0.5), 0]}
+      position={[xOffset + (col * 0.5), yOffset + (row * 0.5), 0]}
       ref={ref}
       scale={active ? 0.5 : 0.2}
       onPointerOver={() => setHover(true)}
