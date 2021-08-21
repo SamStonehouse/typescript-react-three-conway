@@ -34,14 +34,14 @@ module.exports = (opts) => (config) => {
   )({
     target: 'web',
     stats: {
-      assets: true,
+      assets: false,
       children: false,
       chunks: false,
       chunkModules: false,
       colors: true,
       entrypoints: false,
       hash: false,
-      modules: false,
+      modules: true,
       timings: false,
       version: false,
     },

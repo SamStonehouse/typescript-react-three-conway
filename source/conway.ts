@@ -8,6 +8,11 @@ export const createGrid = (getVal: () => number) => (cols: number, rows: number)
   return Array<number[]>(cols * rows).fill([]).map(getVal);
 };
 
+/**
+ * Returns a function which overflows a given coordinate, for example, in a 10x10 grid, 11, 11 would go to 1, 1
+ *
+ * Used for overflowing the conway calculations over the border
+ */
 const overflowMapper = (cols: number, rows: number) => ([col, row]: number[]): number[] => [(col + cols) % cols, (row + rows) % rows];
 
 /**
@@ -26,6 +31,10 @@ export const indexMapper = (cols: number) => {
   };
 };
 
+
+/**
+ * Returns the next cell state of a given cell, given then value of the cell and the sum of the neighbouring cells
+ */
 const nextCellState = curry((value: number, neighbourSum: number): number => {
   return value === 1
     ? ((neighbourSum < 2 || neighbourSum > 3) ? 0 : 1)
@@ -53,15 +62,17 @@ const createCellNeighbourIndexes = (overflowMap, positionMap, cellPositions: num
 
 const cellValue = (cells: number[]) => (index: number): number => cells[index];
 
-export const runGeneration = (cells: number[], cols: number, rows: number): number[] => {
-  const cellGetter = cellValue(cells);
+export const getGenerator = (cols: number, rows: number): ((cells: number[])=> number[]) => {
   const overflowMap = overflowMapper(cols, rows);
   const positionMap = positionMapper(cols);
   const indexMap = indexMapper(cols);
   const cellPositions = generateCellPositions(cols, rows, indexMap);
   const cellNeighbourMap = createCellNeighbourIndexes(overflowMap, positionMap, cellPositions);
-  const neighbourSums = cellNeighbourMap.map((neighbours: number[]) => neighbours.map(cellGetter).reduce(sum));
-  const neighbourSumGetter = cellValue(neighbourSums);
 
-  return cells.map((val, index) => nextCellState(val, neighbourSumGetter(index)));
+  return (cells: number[]): number[] => {
+    const neighbourSums = cellNeighbourMap.map((neighbours: number[]) => neighbours.map(cellValue(cells)).reduce(sum));
+    const neighbourSumGetter = cellValue(neighbourSums);
+
+    return cells.map((val, index) => nextCellState(val, neighbourSumGetter(index)));
+  };
 };

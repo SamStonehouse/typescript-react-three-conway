@@ -1,5 +1,5 @@
 module.exports = api => {
-  const isTest = api.env('test');
+  // const isTest = api.env('test');
   api.cache(true);
   return {
     presets: [
@@ -11,18 +11,11 @@ module.exports = api => {
           targets: {
             browsers: ['last 2 versions'],
           },
-          modules: isTest ? 'commonjs' : false,
+          useBuiltIns: 'usage',
+          corejs: '3.16',
+          modules: false,
         },
       ],
     ],
-    plugins: [
-      [
-        "@babel/plugin-transform-runtime",
-        {
-          regenerator: true,
-          corejs: 3
-        }
-      ]
-    ]
   };
 };

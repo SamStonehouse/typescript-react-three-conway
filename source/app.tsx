@@ -1,18 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { wrap } from 'comlink';
 
 import styles from './app.scss';
 import Cell from './cell';
 import { createGrid, randomVal, indexMapper } from './conway';
+import type { WorkerApi } from './workers/conway.worker';
 
-// eslint-disable-next-line import/extensions
-// import ConwayWorker from './conway.worker.ts';
+
+const runConway = async (worker, cols: number, rows: number, cells: number[]) => {
+  const service = wrap<WorkerApi>(worker);
+  return service.run(cols, rows, cells);
+};
 
 const App = (): React.ReactElement => {
-  const [cols] = useState(20);
-  const [rows] = useState(20);
+  const [cols] = useState(10);
+  const [rows] = useState(10);
   const [cells, setCells] = useState<number[]>([]);
   const [running, setRunning] = useState(true);
+  const [worker] = useState(new Worker(new URL('./workers/conway.worker.ts', import.meta.url)));
 
   const indexMap = useMemo(() => { return indexMapper(cols); }, [cols]);
 
@@ -21,23 +27,27 @@ const App = (): React.ReactElement => {
   }, [cols, rows]);
 
   useEffect(() => {
-    console.log(import.meta.url);
-    const worker = new Worker(new URL('./workers/conway.worker.ts', import.meta.url));
-    worker.onmessage = (e: MessageEvent<any>) => {
-      // eslint-disable-next-line no-console
-      console.log(e);
-    };
+    let interval;
 
-    worker.postMessage({
-      type: 'test',
-    });
-  }, []);
+    if (running) {
+      interval = setTimeout(() => {
+        if (cells.length > 0) {
+          runConway(worker, cols, rows, cells).then((newCells: number[]) => {
+            setCells(newCells);
+          });
+        }
+      }, 500);
+    }
+
+    return () => {
+      clearTimeout(interval);
+    };
+  }, [running, cells]);
 
   return (
     <div className={styles.app}>
       <div className={styles.controls}>
         <button type='button' onClick={() => { setRunning((isRunning) => !isRunning); }}>{running ? 'Pause' : 'Play'}</button>
-        {/* <button type='button' onClick={() => { console.log(runGeneration(cells, cols, rows)); }}>Next</button> */}
       </div>
       <Canvas className={styles.canvas}>
         <ambientLight />
@@ -62,12 +72,3 @@ const App = (): React.ReactElement => {
 };
 
 export default App;
-
-
-const test = async () => {
-  console.log(import.meta.url);
-  const worker = new Worker(new URL('./workers/conway.worker.ts', import.meta.url));
-  console.log(worker);
-};
-
-test();
