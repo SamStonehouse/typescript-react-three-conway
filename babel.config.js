@@ -1,5 +1,5 @@
 module.exports = api => {
-  const isTest = api.env('test');
+  // const isTest = api.env('test');
   api.cache(true);
   return {
     presets: [
@@ -10,8 +10,12 @@ module.exports = api => {
         {
           targets: {
             browsers: ['last 2 versions'],
+            esmodules: true
           },
-          modules: isTest ? 'commonjs' : false,
+          useBuiltIns: 'usage',
+          corejs: 3,
+          // modules: isTest ? 'commonjs' : false,
+          modules: false,
         },
       ],
     ],
