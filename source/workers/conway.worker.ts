@@ -5,11 +5,7 @@ import { getGenerator } from '@/conway';
 const memoizeGetGenerator = memoizeOne(getGenerator);
 
 const run = async (cols: number, rows: number, cells: number[]) => {
-  const runGeneration = memoizeGetGenerator(cols, rows);
-  console.time('Conway');
-  const newGeneration = runGeneration(cells);
-  console.timeEnd('Conway');
-  return newGeneration;
+  return memoizeGetGenerator(cols, rows)(cells);
 };
 
 const workerApi = {

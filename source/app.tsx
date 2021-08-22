@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { wrap } from 'comlink';
 
@@ -8,9 +8,13 @@ import { createGrid, randomVal, indexMapper } from './conway';
 import type { WorkerApi } from './workers/conway.worker';
 
 
-const runConway = async (worker, cols: number, rows: number, cells: number[]) => {
-  const service = wrap<WorkerApi>(worker);
-  return service.run(cols, rows, cells);
+const useConwayWorker = () => {
+  const worker = useRef(new Worker(new URL('./workers/conway.worker.ts', import.meta.url)));
+
+  return async (cols: number, rows: number, cells: number[]) => {
+    const service = wrap<WorkerApi>(worker.current);
+    return service.run(cols, rows, cells);
+  };
 };
 
 const App = (): React.ReactElement => {
@@ -18,7 +22,7 @@ const App = (): React.ReactElement => {
   const [rows] = useState(10);
   const [cells, setCells] = useState<number[]>([]);
   const [running, setRunning] = useState(true);
-  const [worker] = useState(new Worker(new URL('./workers/conway.worker.ts', import.meta.url)));
+  const conwayWorker = useConwayWorker();
 
   const indexMap = useMemo(() => { return indexMapper(cols); }, [cols]);
 
@@ -32,7 +36,7 @@ const App = (): React.ReactElement => {
     if (running) {
       interval = setTimeout(() => {
         if (cells.length > 0) {
-          runConway(worker, cols, rows, cells).then((newCells: number[]) => {
+          conwayWorker(cols, rows, cells).then((newCells: number[]) => {
             setCells(newCells);
           });
         }
