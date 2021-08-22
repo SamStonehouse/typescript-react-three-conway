@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { wrap } from 'comlink';
+import { wrap, Remote } from 'comlink';
 
 import styles from './app.scss';
 import Cell from './cell';
@@ -8,18 +8,30 @@ import { createGrid, randomVal, indexMapper } from './conway';
 import type { WorkerApi } from './workers/conway.worker';
 
 
+const createConwayService = (): Remote<WorkerApi> => {
+  const worker = new Worker(new URL('./workers/conway.worker.ts', import.meta.url));
+  return wrap<WorkerApi>(worker);
+};
+
 const useConwayWorker = () => {
-  const worker = useRef(new Worker(new URL('./workers/conway.worker.ts', import.meta.url)));
+  const service = useRef<Remote<WorkerApi> | null>(null);
+
+  function getService() {
+    if (service.current === null) {
+      service.current = createConwayService();
+    }
+    return service.current;
+  }
 
   return async (cols: number, rows: number, cells: number[]) => {
-    const service = wrap<WorkerApi>(worker.current);
-    return service.run(cols, rows, cells);
+    return getService().run(cols, rows, cells);
   };
 };
 
 const App = (): React.ReactElement => {
   const [cols] = useState(10);
   const [rows] = useState(10);
+  const [intervalTime] = useState(500);
   const [cells, setCells] = useState<number[]>([]);
   const [running, setRunning] = useState(true);
   const conwayWorker = useConwayWorker();
@@ -40,7 +52,7 @@ const App = (): React.ReactElement => {
             setCells(newCells);
           });
         }
-      }, 500);
+      }, intervalTime);
     }
 
     return () => {
